@@ -4,15 +4,15 @@
   <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.min.css" integrity="sha256-BJ/G+e+y7bQdrYkS2RBTyNfBHpA9IuGaPmf9htub5MQ=" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp" crossorigin="anonymous">
 
-  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js"></script>
-  <script src="https://unpkg.com/axios@0.18.0/dist/axios.min.js"></script>
   
   <!-- actual layout -->
   <div class="bg-light">
@@ -66,10 +66,12 @@
                   <h1 id="numberViews" class="float-sm-left text-secondary">
                     loading...
                   </h1>
-                  <!-- <span class="oi oi-arrow-bottom"></span> -->
-                  <span id="diffView" class="p-2">
-                    loading...
-                  </span>
+                  <div class="p-2">
+                    <i id="viewChartArrow"></i>
+                    <span id="diffView">
+                      loading...
+                    </span>
+                  </div>
                   
                 </div>
                 <canvas id="viewChart"></canvas>
@@ -85,9 +87,12 @@
                   <h1 id="numberLikes" class="float-sm-left text-secondary">
                     loading...
                   </h1>
-                  <span id="diffLike" class="p-2">
-                    loading...
-                  </span>
+                  <div class="p-2">
+                    <i id="likeChartArrow"></i>
+                    <span id="diffLike">
+                      loading...
+                    </span>
+                  </div>
                 </div>
                 <canvas id="likeChart"></canvas>
               </div>
@@ -102,9 +107,12 @@
                   <h1 id="numberSubcribers" class="float-sm-left text-secondary">
                     loading...
                   </h1>
-                  <span id="diffSubcriber" class="p-2">
-                    loading...
-                  </span>
+                  <div class="p-2">
+                    <i id="subcriberChartArrow"></i>
+                    <span id="diffSubcriber">
+                      loading...
+                    </span>
+                  </div>
                 </div>
                 <canvas id="subcriberChart"></canvas>
               </div>
@@ -122,24 +130,52 @@
     let subcriberChartData = {},
         viewChartData = {},
         likeChartData = {};
-
-    axios.get('/dashboard?channelId=UCSJ4gkVC6NrvII8umztf0Ow')
+    $.get('/dashboardSummary?channelId={{ app('request')->input('channelId') }}')
     .then(function (response) {
-      $('#numberVideos').html(convertNumber(response.data.chartData[0].totalVideos));
-      $('#numberViews').html(convertNumber(response.data.chartData[0].totalViews));
-      $('#numberSubcribers').html(convertNumber(response.data.chartData[0].totalSubcribers));
-      $('#numberLikes').html(convertNumber(response.data.chartData[0].totalLikes));
-      $('#diffSubcriber').html(convertPercent(response.data.chartData[0].totalSubcribers, response.data.diffSubcriber));
-      $('#diffLike').html(convertNumber(response.data.diffLike));
-      $('#diffView').html(convertNumber(response.data.diffView));
+      $('#numberVideos').html(convertNumber(response.chartData[0].totalVideos));
+      $('#numberViews').html(convertNumber(response.chartData[0].totalViews));
+      $('#numberSubcribers').html(convertNumber(response.chartData[0].totalSubcribers));
+      $('#numberLikes').html(convertNumber(response.chartData[0].totalLikes));
+      $('#diffSubcriber').html(convertPercent(response.chartData[0].totalSubcribers, response.diffSubcriber));
+      $('#diffLike').html(convertNumber(response.diffLike));
+      $('#diffView').html(convertNumber(response.diffView));
 
-      timestampLabels = response.data.chartData.map(item => `Time: ${new Date(item.unixtime*1000)}`);
+      if (response.diffSubcriber > 0) {
+        $('#subcriberChartArrow').addClass('fas fa-arrow-up text-success');
+        $('#diffSubcriber').addClass('text-success');
+      } 
+      else if (response.diffSubcriber < 0) {
+        $('#subcriberChartArrow').addClass('fas fa-arrow-down text-danger');
+        $('#diffSubcriber').addClass('text-danger');
+      }
+
+      if (response.diffView > 0) {
+        $('#viewChartArrow').addClass('fas fa-arrow-up text-success');
+        $('#diffView').addClass('text-success');
+      } 
+      else if (response.diffView < 0) {
+        $('#viewChartArrow').addClass('fas fa-arrow-down text-danger');
+        $('#diffView').addClass('text-danger');
+      }
+
+      if (response.diffLike > 0) {
+        $('#likeChartArrow').addClass('fas fa-arrow-up text-success');
+        $('#diffLike').addClass('text-success');
+      } 
+      else if (response.diffLike < 0) {
+        $('#likeChartArrow').addClass('fas fa-arrow-down text-danger');
+        $('#diffLike').addClass('text-danger');
+      }
+      
+      
+
+      timestampLabels = response.chartData.map(item => `Time: ${new Date(item.unixtime*1000)}`);
       subcriberChartData.labels = timestampLabels;
       viewChartData.labels = timestampLabels;
       likeChartData.labels = timestampLabels;
-      subcriberChartData.data = response.data.chartData.map(item => item.totalSubcribers);
-      viewChartData.data = response.data.chartData.map(item => item.totalViews);
-      likeChartData.data = response.data.chartData.map(item => item.totalLabels);
+      subcriberChartData.data = response.chartData.map(item => item.totalSubcribers);
+      viewChartData.data = response.chartData.map(item => item.totalViews);
+      likeChartData.data = response.chartData.map(item => item.totalLabels);
     
       renderSubcriberChart("subcriberChart", subcriberChartData);
       renderViewChart("viewChart", viewChartData);

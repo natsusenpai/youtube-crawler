@@ -12,7 +12,7 @@
 */
 
 Route::get('/', function () {
-    return view('welcome', ['name' => 'Samantha']);
+    return view('welcome');
 });
 
-Route::get('/dashboard', 'DashboardController@getDashboardSummary');
+Route::get('/dashboardSummary', 'DashboardController@getDashboardSummary');
